@@ -10,7 +10,7 @@ A BB plugin for people who run many agent threads under one another. When you op
 
 - **Waiting.** A descendant waiting for your answer or approval, even while it runs, since its agent is blocked on you.
 - **Failed.** An idle descendant that failed and that you have not seen since its last update.
-- **Unread result.** An idle descendant holding a result you have not seen. This needs the Responsibilities plugin (`responsibilities`, not published yet), which records results and seen marks. Without it the plugin knows only BB's own data: waiting and failed descendants get columns, unread results do not.
+- **Unread result.** An idle descendant holding a result you have not seen. This needs the [Responsibilities](https://github.com/neoromantic/bb-plugin-responsibilities) plugin (`responsibilities`), which records results and seen marks. Without it the plugin knows only BB's own data: waiting and failed descendants get columns, unread results do not.
 
 A working descendant gets none: busy status, machine provisioning or waiting for its host, a workflow, background agent or command, plan mode or goal, or a queued message. Hidden and archived threads never do.
 
@@ -55,12 +55,12 @@ Thread Columns 0.6.0 used the `model-effort-badges` ID. Model & Effort Badges 0.
 Requires BB 0.47.1 or later.
 
 ```sh
-bb plugin install npm:bb-plugin-subthread-columns@0.1.0 --yes
+bb plugin install 'git:https://github.com/neoromantic/bb-plugin-subthread-columns.git@semver:^0.1.0' --yes
 bb plugin disable subthread-columns
 bb plugin remove subthread-columns
 ```
 
-For a tracking source, use `bb plugin update subthread-columns --yes`. To change a pinned version or installation source, save the plugin settings, remove its registration, install the desired version, then restore those settings individually. Removal resets settings. Source installation is also supported: `bb plugin install https://github.com/neoromantic/bb-plugin-subthread-columns#v0.1.0 --yes`.
+For a tracking source, use `bb plugin update subthread-columns --yes`. To change a pinned version or installation source, save the plugin settings, remove its registration, install the desired version, then restore those settings individually. Removal resets settings. npm publication is pending.
 
 ## Compatibility
 

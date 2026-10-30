@@ -8,8 +8,8 @@ Thread Columns 0.6.0 uses the stable ID `model-effort-badges`. Version 0.7.0 kee
    ```sh
    bb plugin disable model-effort-badges
    bb plugin remove model-effort-badges
-   bb plugin install npm:bb-plugin-model-effort-badges@0.7.0 --yes
-   bb plugin install npm:bb-plugin-subthread-columns@0.1.0 --yes
+   bb plugin install 'git:https://github.com/neoromantic/bb-plugin-model-effort-badges.git@semver:^0.7.0' --yes
+   bb plugin install 'git:https://github.com/neoromantic/bb-plugin-subthread-columns.git@semver:^0.1.0' --yes
    ```
 
 3. Restore the recorded `columns` and `maxColumns` under `subthread-columns` and `placement` under `model-effort-badges`. The following commands apply **only to the example above**; use your own recorded values:
@@ -30,6 +30,6 @@ Column pages move from `/plugins/model-effort-badges/columns/<thread id>` to `/p
 
 0.7.0 leaves the old attention database intact and does not open it. Subthread Columns does not import that database or track unread results itself. Without Responsibilities it uses BB's waiting/pending-interaction and failed-thread data. Click-and-leave seen marks are local to the browser, not synchronized across devices; concurrent windows can overwrite a local mark and show a failure again. New results are not hidden by an older mark. If Responsibilities becomes unavailable after a successful read, its last snapshot remains until reload.
 
-Responsibilities is a separate plugin, not bundled or publicly available through this release. It owns takeover of the old attention records when available, sidebar status marks, unread-result tracking, manager styling and **New child thread**. Do not delete the old database to complete this migration. No Responsibilities installation is required for standalone waiting/failed columns.
+[Responsibilities](https://github.com/neoromantic/bb-plugin-responsibilities) is a separate optional plugin. Install it with `bb plugin install 'git:https://github.com/neoromantic/bb-plugin-responsibilities.git@semver:^0.1.0' --yes`. It owns takeover of the old attention records, sidebar status marks, unread-result tracking, manager styling and **New child thread**. Do not delete the old database to complete this migration. No Responsibilities installation is required for standalone waiting/failed columns.
 
-When Responsibilities is separately available and installed, replace only the old `model-effort-badges/newChildThread` entry in your existing `rowActions` list with `responsibilities/newChildThread`, preserving every other entry and its position. Do not replace the whole list with an example. Manager styling also moves there: its **Managers file** setting takes an absolute path to a user-owned JSON file with shape `{"managers":[{"threadId":"example-thread-id"}]}` instead of using the old title prefix. There is no default file path. Configure only the relevant setting; do not overwrite your other settings.
+When Responsibilities is installed, replace only the old `model-effort-badges/newChildThread` entry in your existing `rowActions` list with `responsibilities/newChildThread`, preserving every other entry and its position. Do not replace the whole list with an example. Manager styling also moves there: its **Managers file** setting takes an absolute path to a user-owned JSON file with shape `{"managers":[{"threadId":"example-thread-id"}]}` instead of using the old title prefix. There is no default file path. Configure only the relevant setting; do not overwrite your other settings.
