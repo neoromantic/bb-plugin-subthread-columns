@@ -1,10 +1,29 @@
 # Subthread Columns
 
-A BB plugin for people who run many agent threads under one another. When you open a thread whose descendants need you, at any depth, it shows a column page instead of the plain thread view: the thread you opened on the left, then one column per such descendant, with one shared horizontal scroll. The thread's sidebar row stays marked as the current one.
+Answer the subthreads that need you without opening each one separately. Open a parent thread in BB to see its chat on the left and waiting or failed descendants beside it, at any depth. Each column has its own chat and composer. Unread-result columns need the optional [Responsibilities](https://github.com/neoromantic/bb-plugin-responsibilities) plugin.
 
 ![Subthread Columns with waiting and failed example threads](assets/columns.png)
 
 *BB 0.47.1 with synthetic example data, without Responsibilities.*
+
+## Install
+
+Requires BB 0.47.1 / SDK 0.6.79 or later. Uses experimental BB APIs and the standard sidebar; see [compatibility](#compatibility).
+
+```sh
+bb plugin install npm:bb-plugin-subthread-columns@0.1.0 --yes
+```
+
+For a tracking source, use `bb plugin update subthread-columns --yes`. To change a pinned version or installation source, save the plugin settings, remove its registration, install the desired version, then restore those settings individually. Removal resets settings.
+
+To disable or uninstall, use `bb plugin disable subthread-columns` or `bb plugin remove subthread-columns`.
+
+Existing users: [migration reference](MIGRATION.md).
+
+## Try it
+
+1. Open a parent with a subthread waiting for an answer or approval. Reply in that subthread’s column while keeping the parent in view.
+2. Click into a failed column to inspect it, then click outside it. It stays dimmed on this page and stays out next time unless the thread changes. Use **Open** for a normal thread view or **Only this thread** to return to the parent.
 
 ## Who gets a column
 
@@ -41,27 +60,6 @@ bb plugin config subthread-columns set maxColumns 6
 - **Missing.** When Responsibilities is not installed or not running, the read fails at once and the page goes on with BB's own data. Enabling it while BB is open makes BB read its records right away. Disabling it keeps the last records in use until a reload.
 - **Seen marks.** A seen mark goes to Responsibilities, and this browser also keeps it in its local storage. That copy keeps a seen failure out of the columns without Responsibilities, after a reload and in other windows of the same browser; another browser or device shows the failure again until you click in and leave there too. Two windows saving marks at the same moment can overwrite each other's local copy, so a failure may show once more; a mark Responsibilities stored stays. A mark made while Responsibilities was unavailable stays in this browser only and is not sent later, so its dot can still show in the sidebar.
 
-## Coming from Model & Effort Badges 0.6
-
-Thread Columns 0.6.0 used the `model-effort-badges` ID. Model & Effort Badges 0.7.0 shows badges only; install Subthread Columns 0.1.0 separately. See [migration](MIGRATION.md) before updating.
-
-- **Settings.** Save actual `columns`, `maxColumns` and `placement` before updating. Follow [migration](MIGRATION.md), including the separate restoration of placement after a pinned-source reinstall.
-
-- **Seen marks and results.** 0.6 kept them in its own database. Responsibilities takes them over on its first start. Without it, this plugin does not know which failures you saw before, so such a failure gets its column once more until you click in and leave.
-- **Page address.** The page moved from `/plugins/model-effort-badges/columns/<thread id>` to `/plugins/subthread-columns/columns/<thread id>`. An **Only this thread** choice made before the update does not carry over.
-
-## Install, update, uninstall
-
-Requires BB 0.47.1 or later.
-
-```sh
-bb plugin install 'git:https://github.com/neoromantic/bb-plugin-subthread-columns.git@semver:^0.1.0' --yes
-bb plugin disable subthread-columns
-bb plugin remove subthread-columns
-```
-
-For a tracking source, use `bb plugin update subthread-columns --yes`. To change a pinned version or installation source, save the plugin settings, remove its registration, install the desired version, then restore those settings individually. Removal resets settings. npm publication is pending.
-
 ## Compatibility
 
 The plugin does not patch BB, its thread list or its database. What can break on an upgrade is the internal sidebar markup and the experimental APIs below. Then the page or its sidebar mark stops working and BB's own thread view works as before.
@@ -74,7 +72,7 @@ The plugin does not patch BB, its thread list or its database. What can break on
 
 ## Data and access
 
-The plugin adds no sidebar status marks, New child thread action or manager styling. The plugin stores nothing on the server. Its server part only defines the two settings. In the app it reads BB's thread list and Responsibilities' records, and keeps its seen marks in the browser's local storage. No telemetry.
+This is a full-trust BB plugin. Its server part defines the two settings; it stores no thread data on the server. The app reads BB’s thread list and optional Responsibilities records, keeps seen marks in browser local storage and **Only this thread** choices in session storage. It adds no telemetry. It uses your BB server for its features; BB and your configured providers have their own data handling and telemetry settings.
 
 ## Develop
 
