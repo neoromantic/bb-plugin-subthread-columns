@@ -4,7 +4,7 @@ Answer the subthreads that need you without opening each one separately. Open a 
 
 ![Subthread Columns with waiting and failed example threads](assets/columns.png)
 
-*BB 0.47.1 with synthetic example data, without Responsibilities.*
+*Synthetic example data in BB 0.47.1 with Subthread Columns alone. Sidebar marks are BB’s own.*
 
 ## Install
 
