@@ -10,6 +10,8 @@ Answer the subthreads that need you without opening each one separately. Open a 
 
 Requires BB 0.47.1 / SDK 0.6.79 or later. Uses experimental BB APIs and the standard sidebar; see [compatibility](#compatibility).
 
+Open BB’s **Community Plugins → Subthread Columns → Install**, or run `bb plugin install subthread-columns`. For npm:
+
 ```sh
 bb plugin install npm:bb-plugin-subthread-columns@0.1.0 --yes
 ```
