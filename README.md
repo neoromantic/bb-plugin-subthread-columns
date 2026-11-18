@@ -78,7 +78,7 @@ This is a full-trust BB plugin. Its server part defines the two settings; it sto
 
 ## Develop
 
-Use Bun.
+Use Bun. `bun run check` runs the format check (oxfmt), the linter (oxlint with the landmines rules) and the type check; `bun run format` formats the repo in place. The landmines rules need Node 22.18 or later on `PATH`.
 
 ```sh
 bun install --frozen-lockfile
