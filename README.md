@@ -4,7 +4,7 @@ Answer the subthreads that need you without opening each one separately. Open a 
 
 ![Subthread Columns with waiting and failed example threads](assets/columns.png)
 
-*Synthetic example data in BB 0.47.1 with Subthread Columns alone. Sidebar marks are BB’s own.*
+_Synthetic example data in BB 0.47.1 with Subthread Columns alone. Sidebar marks are BB’s own._
 
 ## Install
 
@@ -78,7 +78,7 @@ This is a full-trust BB plugin. Its server part defines the two settings; it sto
 
 ## Develop
 
-Use Bun.
+Use Bun. `bun run check` runs the format check (oxfmt), the linter (oxlint with the landmines rules) and the type check; `bun run format` formats the repo in place. The landmines rules need Node 22.18 or later on `PATH`.
 
 ```sh
 bun install --frozen-lockfile
