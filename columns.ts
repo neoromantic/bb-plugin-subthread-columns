@@ -59,7 +59,7 @@ const URGENCY: Record<Need, number> = { waiting: 0, failed: 1, unread: 2 };
  * him. Otherwise only an idle thread needs him: failed and not seen since its
  * last update, or holding an unread result. Null: it needs nothing now.
  */
-export function needOf(thread: ColumnThread, attention: Attention | undefined): Need | null {
+export function needOf(thread: ColumnThread, attention: Attention | undefined) {
   if (thread.hasPendingInteraction || thread.indicator === "waiting-for-input") return "waiting";
   if (isRunning(thread)) return null;
   if (isFailed(thread) && (attention?.seenAt ?? 0) < thread.updatedAt) return "failed";
@@ -106,7 +106,7 @@ export function nextColumns(
   threads: readonly ColumnThread[],
   attention: ReadonlyMap<string, Attention>,
   { limit = DEFAULT_LIMIT, held = [] }: { limit?: number; held?: readonly (string | null)[] } = {},
-): Layout {
+) {
   const tree = descendants(anchorId, threads).map((entry) => ({
     ...entry,
     need: needOf(entry.thread, attention.get(entry.thread.id)),
@@ -161,7 +161,7 @@ export function nextColumns(
       done: true,
     });
   });
-  return { columns, more };
+  return { columns, more } satisfies Layout;
 }
 
 const sameColumn = (a: Column, b: Column) =>
@@ -173,7 +173,7 @@ const sameColumn = (a: Column, b: Column) =>
   a.path.every((title, i) => title === b.path[i]);
 
 /** `next`, keeping each unchanged column of `prev` as the same object, or `prev` itself when nothing changed. */
-export function settle(prev: Layout, next: Layout): Layout {
+export function settle(prev: Layout, next: Layout) {
   const old = new Map(prev.columns.map((column) => [column.id, column]));
   const columns = next.columns.map((column) => {
     const before = old.get(column.id);
@@ -190,7 +190,7 @@ export function settle(prev: Layout, next: Layout): Layout {
     columns.every((column, i) => column === prev.columns[i])
   )
     return prev;
-  return { columns, more: sameMore ? prev.more : next.more };
+  return { columns, more: sameMore ? prev.more : next.more } satisfies Layout;
 }
 
 /** The descendants that need him now, whether or not the limit leaves them a column. */
@@ -214,7 +214,7 @@ export function shouldAutoOpen(args: {
   inPane: boolean;
   eligible: readonly string[];
   suppressed: readonly string[] | null;
-}): boolean {
+}) {
   const { setting, compact, inPane, eligible, suppressed } = args;
   if (setting === "off" || compact || inPane || eligible.length === 0) return false;
   return suppressed === null || eligible.some((id) => !suppressed.includes(id));
@@ -253,7 +253,7 @@ export function engage(
   target: string | null | undefined,
   anchorId: string,
   kind: "pointer" | "focus",
-): { engaged: string | null; leave: string | null } {
+) {
   if (target === undefined || target === engaged) return { engaged, leave: null };
   const next = kind === "pointer" && target !== anchorId ? target : null;
   return next === engaged ? { engaged, leave: null } : { engaged: next, leave: engaged };
@@ -273,7 +273,7 @@ export function isStolenFocus(focus: {
   editable: boolean;
   afterTab: boolean;
   keyColumn: string | null | undefined;
-}): boolean {
+}) {
   const { engaged, target, anchorId, editable, afterTab, keyColumn } = focus;
   return (
     typeof target === "string" &&

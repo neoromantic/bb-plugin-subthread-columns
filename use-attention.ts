@@ -29,13 +29,14 @@ function subscribeSeen(listener: () => void) {
  * snapshot while a read fails, and reads again on the `attention` tag and on
  * reconnect.
  */
-export function useAttention(): AttentionState {
+export function useAttention() {
   const list = useRpcQuery({ contract, pluginId: RESPONSIBILITIES, method: "list", input: {} });
   const seen = useSyncExternalStore(subscribeSeen, localSeen);
   const attention = useMemo(() => withSeen(list.data, seen), [list.data, seen]);
   const loaded = useRef(false);
   if (!list.isLoading) loaded.current = true;
-  return { attention, loaded: loaded.current };
+  const state: AttentionState = { attention, loaded: loaded.current };
+  return state;
 }
 
 /**

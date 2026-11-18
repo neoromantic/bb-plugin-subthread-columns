@@ -29,7 +29,7 @@ export const COLLAPSED_FAILED: PluginComposerThreadRowStatus = {
 };
 
 /** Every field only grows on the server, so the larger value is always the newer one. */
-export function merge(known: Attention | undefined, next: Attention): Attention {
+export function merge(known: Attention | undefined, next: Attention) {
   const max = (a: number | null | undefined, b: number | null) =>
     a != null && (b === null || a > b) ? a : b;
   return {
@@ -37,14 +37,14 @@ export function merge(known: Attention | undefined, next: Attention): Attention 
     resultAt: max(known?.resultAt, next.resultAt),
     quietAttentionAt: max(known?.quietAttentionAt, next.quietAttentionAt),
     seenAt: max(known?.seenAt, next.seenAt),
-  };
+  } satisfies Attention;
 }
 
 /** Responsibilities' records, none without it, with the seen marks this browser made over them. */
 export function withSeen(
   rows: readonly Attention[] | undefined,
   seen: Readonly<Record<string, number>>,
-): ReadonlyMap<string, Attention> {
+) {
   const attention = new Map(rows?.map((row) => [row.threadId, row]));
   for (const [threadId, seenAt] of Object.entries(seen))
     attention.set(
@@ -60,7 +60,7 @@ export function withSeen(
  * still counts, unless the plugin saw that its latest attention came from a
  * run without output.
  */
-export function isUnread(thread: AttentionThread, attention: Attention | undefined): boolean {
+export function isUnread(thread: AttentionThread, attention: Attention | undefined) {
   if (
     attention?.resultAt != null &&
     attention.resultAt > Math.max(thread.lastReadAt ?? 0, attention.seenAt ?? 0)
@@ -103,7 +103,7 @@ export function rowAttention(
   thread: AttentionThread,
   group: readonly AttentionThread[],
   attention: ReadonlyMap<string, Attention>,
-): RowAttention {
+) {
   const unread = group.some((member) => isUnread(member, attention.get(member.id)));
   const failure =
     thread.status === "error"
@@ -120,5 +120,5 @@ export function rowAttention(
     failed: failure !== null,
     unread,
     quiet: !unread && thread.indicator === "unread-success",
-  };
+  } satisfies RowAttention;
 }

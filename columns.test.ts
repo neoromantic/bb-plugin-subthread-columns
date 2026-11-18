@@ -21,36 +21,34 @@ import {
 
 const IDLE = { workflows: 0, backgroundAgents: 0, backgroundCommands: 0, planMode: 0, goals: 0 };
 
-const thread = (
-  id: string,
-  parentThreadId: string | null,
-  overrides: Partial<ColumnThread> = {},
-): ColumnThread => ({
-  id,
-  parentThreadId,
-  displayTitle: id.toUpperCase(),
-  status: "idle",
-  runtimeStatus: "idle",
-  queuedWork: "none",
-  hasPendingInteraction: false,
-  activity: IDLE,
-  indicator: "none",
-  isUnread: false,
-  lastReadAt: 100,
-  latestAttentionAt: 50,
-  isHidden: false,
-  isArchived: false,
-  createdAt: 10,
-  updatedAt: 100,
-  ...overrides,
-});
-const record = (threadId: string, row: Partial<Attention> = {}): Attention => ({
-  threadId,
-  resultAt: null,
-  quietAttentionAt: null,
-  seenAt: null,
-  ...row,
-});
+const thread = (id: string, parentThreadId: string | null, overrides: Partial<ColumnThread> = {}) =>
+  ({
+    id,
+    parentThreadId,
+    displayTitle: id.toUpperCase(),
+    status: "idle",
+    runtimeStatus: "idle",
+    queuedWork: "none",
+    hasPendingInteraction: false,
+    activity: IDLE,
+    indicator: "none",
+    isUnread: false,
+    lastReadAt: 100,
+    latestAttentionAt: 50,
+    isHidden: false,
+    isArchived: false,
+    createdAt: 10,
+    updatedAt: 100,
+    ...overrides,
+  }) satisfies ColumnThread;
+const record = (threadId: string, row: Partial<Attention> = {}) =>
+  ({
+    threadId,
+    resultAt: null,
+    quietAttentionAt: null,
+    seenAt: null,
+    ...row,
+  }) satisfies Attention;
 const records = (...rows: Attention[]) => new Map(rows.map((row) => [row.threadId, row]));
 const NONE = records();
 

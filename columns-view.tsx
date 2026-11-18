@@ -104,7 +104,7 @@ function columnOf(root: HTMLElement | null, node: EventTarget | null) {
 
 let plainOpen: string | null = null;
 
-function readSuppressed(threadId: string): string[] | null {
+function readSuppressed(threadId: string) {
   try {
     const value: unknown = JSON.parse(sessionStorage.getItem(SUPPRESS + threadId) ?? "null");
     return Array.isArray(value) ? value.filter((id): id is string => typeof id === "string") : null;
