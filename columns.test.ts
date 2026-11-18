@@ -1,10 +1,31 @@
 import { expect, test } from "bun:test";
 import { UNREAD, rowAttention, withSeen, type Attention } from "./attention";
-import { DEFAULT_LIMIT, NO_COLUMNS, columnLimit, descendants, eligibleIds, engage, isEligible, isRunning, isStolenFocus, needOf, nextColumns, routeChange, seenMark, settle, shouldAutoOpen, type ColumnThread } from "./columns";
+import {
+  DEFAULT_LIMIT,
+  NO_COLUMNS,
+  columnLimit,
+  descendants,
+  eligibleIds,
+  engage,
+  isEligible,
+  isRunning,
+  isStolenFocus,
+  needOf,
+  nextColumns,
+  routeChange,
+  seenMark,
+  settle,
+  shouldAutoOpen,
+  type ColumnThread,
+} from "./columns";
 
 const IDLE = { workflows: 0, backgroundAgents: 0, backgroundCommands: 0, planMode: 0, goals: 0 };
 
-const thread = (id: string, parentThreadId: string | null, overrides: Partial<ColumnThread> = {}): ColumnThread => ({
+const thread = (
+  id: string,
+  parentThreadId: string | null,
+  overrides: Partial<ColumnThread> = {},
+): ColumnThread => ({
   id,
   parentThreadId,
   displayTitle: id.toUpperCase(),
@@ -23,7 +44,13 @@ const thread = (id: string, parentThreadId: string | null, overrides: Partial<Co
   updatedAt: 100,
   ...overrides,
 });
-const record = (threadId: string, row: Partial<Attention> = {}): Attention => ({ threadId, resultAt: null, quietAttentionAt: null, seenAt: null, ...row });
+const record = (threadId: string, row: Partial<Attention> = {}): Attention => ({
+  threadId,
+  resultAt: null,
+  quietAttentionAt: null,
+  seenAt: null,
+  ...row,
+});
 const records = (...rows: Attention[]) => new Map(rows.map((row) => [row.threadId, row]));
 const NONE = records();
 
@@ -53,7 +80,10 @@ test("an unknown status counts as idle", () => {
 test("a descendant waiting for an answer or approval is eligible, even while busy", () => {
   expect(needOf(thread("c", "a", { hasPendingInteraction: true }), undefined)).toBe("waiting");
   expect(needOf(thread("c", "a", { indicator: "waiting-for-input" }), undefined)).toBe("waiting");
-  for (const working of WORKING) expect(needOf(thread("c", "a", { ...working, hasPendingInteraction: true }), undefined)).toBe("waiting");
+  for (const working of WORKING)
+    expect(needOf(thread("c", "a", { ...working, hasPendingInteraction: true }), undefined)).toBe(
+      "waiting",
+    );
 });
 
 test("REPRO: a failure or an unread result does not count while the thread runs again", () => {
@@ -62,7 +92,9 @@ test("REPRO: a failure or an unread result does not count while the thread runs 
   expect(needOf(thread("c", "a", { status: "error", updatedAt: 300 }), undefined)).toBe("failed");
   for (const working of WORKING) {
     expect(needOf(thread("c", "a", working), unread)).toBeNull();
-    expect(needOf(thread("c", "a", { queuedWork: "failed", ...working, updatedAt: 300 }), undefined)).toBeNull();
+    expect(
+      needOf(thread("c", "a", { queuedWork: "failed", ...working, updatedAt: 300 }), undefined),
+    ).toBeNull();
   }
 });
 
@@ -98,19 +130,25 @@ const tree = [
 ];
 
 test("descendants run depth first, oldest sibling first, without hidden or archived threads", () => {
-  expect(descendants("a", tree).map(({ thread, depth, path }) => [thread.id, depth, path])).toEqual([
-    ["b", 1, ["Anchor"]],
-    ["d", 2, ["Anchor", "Parent"]],
-    ["c", 1, ["Anchor"]],
-  ]);
+  expect(descendants("a", tree).map(({ thread, depth, path }) => [thread.id, depth, path])).toEqual(
+    [
+      ["b", 1, ["Anchor"]],
+      ["d", 2, ["Anchor", "Parent"]],
+      ["c", 1, ["Anchor"]],
+    ],
+  );
 });
 
 /** The tree with these threads waiting for his answer, and the rest as given. */
-const asking = (ids: string[], threads: readonly ColumnThread[] = tree) => threads.map((t) => (ids.includes(t.id) ? { ...t, hasPendingInteraction: true } : t));
+const asking = (ids: string[], threads: readonly ColumnThread[] = tree) =>
+  threads.map((t) => (ids.includes(t.id) ? { ...t, hasPendingInteraction: true } : t));
 const ids = (layout: ReturnType<typeof nextColumns>) => layout.columns.map((c) => c.id);
 
 test("an ineligible parent gets no column but stays in its child's path", () => {
-  expect(nextColumns(NO_COLUMNS, "a", asking(["d"]), NONE)).toEqual({ columns: [{ id: "d", depth: 2, path: ["Anchor", "Parent"], title: "D", done: false }], more: [] });
+  expect(nextColumns(NO_COLUMNS, "a", asking(["d"]), NONE)).toEqual({
+    columns: [{ id: "d", depth: 2, path: ["Anchor", "Parent"], title: "D", done: false }],
+    more: [],
+  });
 });
 
 test("a parent cycle cannot loop the tree", () => {
@@ -127,24 +165,35 @@ test("shown columns stay as done; new ones join at their tree position", () => {
     ["c", true],
   ]);
   // Done columns come back to life when they need him again.
-  expect(nextColumns(second, "a", asking(["c", "d"]), NONE).columns.map((c) => c.done)).toEqual([false, false]);
+  expect(nextColumns(second, "a", asking(["c", "d"]), NONE).columns.map((c) => c.done)).toEqual([
+    false,
+    false,
+  ]);
 });
 
 test("REPRO: a shown column whose thread starts working again is not done", () => {
   const shown = nextColumns(NO_COLUMNS, "a", asking(["c"]), NONE);
   for (const working of WORKING) {
     const threads = tree.map((t) => (t.id === "c" ? { ...t, ...working } : t));
-    expect(nextColumns(shown, "a", threads, NONE).columns).toEqual([{ ...shown.columns[0]!, done: false }]);
+    expect(nextColumns(shown, "a", threads, NONE).columns).toEqual([
+      { ...shown.columns[0]!, done: false },
+    ]);
   }
 });
 
 test("archived, deleted and moved threads lose their column, except the one he is in", () => {
   const shown = nextColumns(NO_COLUMNS, "a", asking(["b", "c"]), NONE);
-  const gone = tree.filter((t) => t.id !== "b").map((t) => (t.id === "c" ? { ...t, isArchived: true } : t));
+  const gone = tree
+    .filter((t) => t.id !== "b")
+    .map((t) => (t.id === "c" ? { ...t, isArchived: true } : t));
   expect(nextColumns(shown, "a", gone, NONE).columns).toEqual([]);
-  expect(nextColumns(shown, "a", gone, NONE, { held: ["c"] }).columns).toEqual([{ ...shown.columns[1]!, done: true }]);
+  expect(nextColumns(shown, "a", gone, NONE, { held: ["c"] }).columns).toEqual([
+    { ...shown.columns[1]!, done: true },
+  ]);
   const moved = asking(["c"]).map((t) => (t.id === "b" ? { ...t, parentThreadId: "x" } : t));
-  expect(nextColumns(shown, "a", moved, NONE, { held: ["b"] }).columns.map((c) => [c.id, c.done])).toEqual([
+  expect(
+    nextColumns(shown, "a", moved, NONE, { held: ["b"] }).columns.map((c) => [c.id, c.done]),
+  ).toEqual([
     ["b", true],
     ["c", false],
   ]);
@@ -153,7 +202,10 @@ test("archived, deleted and moved threads lose their column, except the one he i
 test("eligible ids are every descendant that needs him, whatever the limit", () => {
   const threads = asking(["c"]);
   expect(eligibleIds("a", threads, records(record("d", { resultAt: 200 })))).toEqual(["d", "c"]);
-  expect(nextColumns(NO_COLUMNS, "a", threads, records(record("d", { resultAt: 200 })), { limit: 1 }).more).toEqual([{ id: "d", title: "D" }]);
+  expect(
+    nextColumns(NO_COLUMNS, "a", threads, records(record("d", { resultAt: 200 })), { limit: 1 })
+      .more,
+  ).toEqual([{ id: "d", title: "D" }]);
   expect(eligibleIds("missing", threads, NONE)).toEqual([]);
 });
 
@@ -167,7 +219,8 @@ const wide = [
   thread("q1", "p1", { createdAt: 5 }),
   thread("q2", "p2", { createdAt: 6 }),
 ];
-const set = (threads: readonly ColumnThread[], changes: Record<string, Partial<ColumnThread>>) => threads.map((t) => ({ ...t, ...changes[t.id] }));
+const set = (threads: readonly ColumnThread[], changes: Record<string, Partial<ColumnThread>>) =>
+  threads.map((t) => ({ ...t, ...changes[t.id] }));
 
 test("REPRO: over the limit, waiting comes first, then failed, then unread, newest first; shown in tree order", () => {
   const threads = set(wide, {
@@ -189,19 +242,44 @@ test("REPRO: over the limit, waiting comes first, then failed, then unread, newe
 });
 
 test("REPRO: +N more lists the eligible descendants left without a column, most urgent first", () => {
-  const threads = set(wide, { p1: { hasPendingInteraction: true }, p2: { status: "error", updatedAt: 300 }, p3: { status: "error", updatedAt: 310 }, p4: {} });
-  const layout = nextColumns(NO_COLUMNS, "a", threads, records(record("p4", { resultAt: 200 })), { limit: 1 });
+  const threads = set(wide, {
+    p1: { hasPendingInteraction: true },
+    p2: { status: "error", updatedAt: 300 },
+    p3: { status: "error", updatedAt: 310 },
+    p4: {},
+  });
+  const layout = nextColumns(NO_COLUMNS, "a", threads, records(record("p4", { resultAt: 200 })), {
+    limit: 1,
+  });
   expect(ids(layout)).toEqual(["p1"]);
   expect(layout.more.map((entry) => entry.id)).toEqual(["p3", "p2", "p4"]);
   // Working descendants are not counted.
-  expect(nextColumns(NO_COLUMNS, "a", set(wide, { p1: { hasPendingInteraction: true }, p2: { status: "active" } }), NONE, { limit: 1 }).more).toEqual([]);
+  expect(
+    nextColumns(
+      NO_COLUMNS,
+      "a",
+      set(wide, { p1: { hasPendingInteraction: true }, p2: { status: "active" } }),
+      NONE,
+      { limit: 1 },
+    ).more,
+  ).toEqual([]);
 });
 
 test("REPRO: when full, a newly eligible descendant replaces the oldest done column, at its own tree position", () => {
-  const first = nextColumns(NO_COLUMNS, "a", set(wide, { p1: { hasPendingInteraction: true }, p3: { hasPendingInteraction: true } }), NONE, { limit: 2 });
+  const first = nextColumns(
+    NO_COLUMNS,
+    "a",
+    set(wide, { p1: { hasPendingInteraction: true }, p3: { hasPendingInteraction: true } }),
+    NONE,
+    { limit: 2 },
+  );
   expect(ids(first)).toEqual(["p1", "p3"]);
   // p1 and p3 are answered; p3 went idle first. Then q2 asks.
-  const answered = set(wide, { p1: { updatedAt: 300 }, p3: { updatedAt: 200 }, q2: { hasPendingInteraction: true } });
+  const answered = set(wide, {
+    p1: { updatedAt: 300 },
+    p3: { updatedAt: 200 },
+    q2: { hasPendingInteraction: true },
+  });
   const next = nextColumns(first, "a", answered, NONE, { limit: 2 });
   expect(next.columns.map((c) => [c.id, c.done])).toEqual([
     ["p1", true],
@@ -211,9 +289,19 @@ test("REPRO: when full, a newly eligible descendant replaces the oldest done col
 });
 
 test("REPRO: a running sticky column counts toward the limit and is never replaced", () => {
-  const first = nextColumns(NO_COLUMNS, "a", set(wide, { p1: { hasPendingInteraction: true }, p3: { hasPendingInteraction: true } }), NONE, { limit: 2 });
+  const first = nextColumns(
+    NO_COLUMNS,
+    "a",
+    set(wide, { p1: { hasPendingInteraction: true }, p3: { hasPendingInteraction: true } }),
+    NONE,
+    { limit: 2 },
+  );
   // He answered both; both work again, and q2 asks.
-  const working = set(wide, { p1: { status: "active", updatedAt: 300 }, p3: { activity: { ...IDLE, workflows: 1 }, updatedAt: 200 }, q2: { hasPendingInteraction: true } });
+  const working = set(wide, {
+    p1: { status: "active", updatedAt: 300 },
+    p3: { activity: { ...IDLE, workflows: 1 }, updatedAt: 200 },
+    q2: { hasPendingInteraction: true },
+  });
   const next = nextColumns(first, "a", working, NONE, { limit: 2 });
   expect(next.columns.map((c) => [c.id, c.done])).toEqual([
     ["p1", false],
@@ -223,11 +311,25 @@ test("REPRO: a running sticky column counts toward the limit and is never replac
 });
 
 test("REPRO: a descendant already counted in +N more never replaces a done column; only a newcomer does", () => {
-  const first = nextColumns(NO_COLUMNS, "a", set(wide, { p1: { hasPendingInteraction: true }, p3: { hasPendingInteraction: true }, p4: { status: "error", updatedAt: 300 } }), NONE, { limit: 2 });
+  const first = nextColumns(
+    NO_COLUMNS,
+    "a",
+    set(wide, {
+      p1: { hasPendingInteraction: true },
+      p3: { hasPendingInteraction: true },
+      p4: { status: "error", updatedAt: 300 },
+    }),
+    NONE,
+    { limit: 2 },
+  );
   expect(ids(first)).toEqual(["p1", "p3"]);
   expect(first.more).toEqual([{ id: "p4", title: "P4" }]);
   // He answers p1 elsewhere: p1 is done and stays, dimmed; p4 keeps waiting.
-  const answered = set(wide, { p1: { updatedAt: 310 }, p3: { hasPendingInteraction: true }, p4: { status: "error", updatedAt: 300 } });
+  const answered = set(wide, {
+    p1: { updatedAt: 310 },
+    p3: { hasPendingInteraction: true },
+    p4: { status: "error", updatedAt: 300 },
+  });
   const second = nextColumns(first, "a", answered, NONE, { limit: 2 });
   expect(second.columns.map((c) => [c.id, c.done])).toEqual([
     ["p1", true],
@@ -235,24 +337,55 @@ test("REPRO: a descendant already counted in +N more never replaces a done colum
   ]);
   expect(second.more).toEqual([{ id: "p4", title: "P4" }]);
   // Then q1 starts waiting: it is new, so it takes p1's place; p4 still waits.
-  const third = nextColumns(second, "a", set(answered, { q1: { hasPendingInteraction: true } }), NONE, { limit: 2 });
+  const third = nextColumns(
+    second,
+    "a",
+    set(answered, { q1: { hasPendingInteraction: true } }),
+    NONE,
+    { limit: 2 },
+  );
   expect(ids(third)).toEqual(["q1", "p3"]);
   expect(third.more).toEqual([{ id: "p4", title: "P4" }]);
   // A free place goes to the one waiting.
-  expect(ids(nextColumns(third, "a", set(answered, { q1: { hasPendingInteraction: true } }), NONE, { limit: 3 }))).toEqual(["q1", "p3", "p4"]);
+  expect(
+    ids(
+      nextColumns(third, "a", set(answered, { q1: { hasPendingInteraction: true } }), NONE, {
+        limit: 3,
+      }),
+    ),
+  ).toEqual(["q1", "p3", "p4"]);
 });
 
 test("a done column he is in, clicked or by focus, is never replaced; without a done one left, the newcomer waits", () => {
-  const first = nextColumns(NO_COLUMNS, "a", set(wide, { p1: { hasPendingInteraction: true }, p3: { hasPendingInteraction: true } }), NONE, { limit: 2 });
-  const answered = set(wide, { p1: { updatedAt: 300 }, p3: { updatedAt: 200 }, q2: { hasPendingInteraction: true } });
-  expect(ids(nextColumns(first, "a", answered, NONE, { limit: 2, held: ["p3", null] }))).toEqual(["q2", "p3"]);
+  const first = nextColumns(
+    NO_COLUMNS,
+    "a",
+    set(wide, { p1: { hasPendingInteraction: true }, p3: { hasPendingInteraction: true } }),
+    NONE,
+    { limit: 2 },
+  );
+  const answered = set(wide, {
+    p1: { updatedAt: 300 },
+    p3: { updatedAt: 200 },
+    q2: { hasPendingInteraction: true },
+  });
+  expect(ids(nextColumns(first, "a", answered, NONE, { limit: 2, held: ["p3", null] }))).toEqual([
+    "q2",
+    "p3",
+  ]);
   const both = nextColumns(first, "a", answered, NONE, { limit: 2, held: ["p1", "p3"] });
   expect(ids(both)).toEqual(["p1", "p3"]);
   expect(both.more).toEqual([{ id: "q2", title: "Q2" }]);
 });
 
 test("a gone column he is in still counts toward the limit", () => {
-  const first = nextColumns(NO_COLUMNS, "a", set(wide, { p3: { hasPendingInteraction: true } }), NONE, { limit: 1 });
+  const first = nextColumns(
+    NO_COLUMNS,
+    "a",
+    set(wide, { p3: { hasPendingInteraction: true } }),
+    NONE,
+    { limit: 1 },
+  );
   const archived = set(wide, { p3: { isArchived: true }, p4: { hasPendingInteraction: true } });
   const next = nextColumns(first, "a", archived, NONE, { limit: 1, held: ["p3"] });
   expect(next.columns.map((c) => [c.id, c.done])).toEqual([["p3", true]]);
@@ -260,7 +393,11 @@ test("a gone column he is in still counts toward the limit", () => {
 });
 
 test("a lower limit keeps the columns already shown; a higher one lets the rest in", () => {
-  const all = set(wide, { p1: { hasPendingInteraction: true }, p2: { hasPendingInteraction: true }, p3: { hasPendingInteraction: true } });
+  const all = set(wide, {
+    p1: { hasPendingInteraction: true },
+    p2: { hasPendingInteraction: true },
+    p3: { hasPendingInteraction: true },
+  });
   const shown = nextColumns(NO_COLUMNS, "a", all, NONE, { limit: 3 });
   expect(nextColumns(shown, "a", all, NONE, { limit: 1 })).toEqual(shown);
   const one = nextColumns(NO_COLUMNS, "a", all, NONE, { limit: 1 });
@@ -270,7 +407,8 @@ test("a lower limit keeps the columns already shown; a higher one lets the rest 
 
 test("the limit reads 8 unless the setting is a positive whole number", () => {
   expect(DEFAULT_LIMIT).toBe(8);
-  for (const value of [undefined, null, "12", 0, -3, 2.5, Number.NaN, Number.POSITIVE_INFINITY]) expect(columnLimit(value)).toBe(8);
+  for (const value of [undefined, null, "12", 0, -3, 2.5, Number.NaN, Number.POSITIVE_INFINITY])
+    expect(columnLimit(value)).toBe(8);
   expect(columnLimit(1)).toBe(1);
   expect(columnLimit(12)).toBe(12);
 });
@@ -286,13 +424,28 @@ test("settle keeps unchanged columns as the same objects, and the whole layout w
 });
 
 const open = (overrides: Partial<Parameters<typeof shouldAutoOpen>[0]> = {}) =>
-  shouldAutoOpen({ setting: "auto", compact: false, inPane: false, eligible: ["c"], suppressed: null, ...overrides });
+  shouldAutoOpen({
+    setting: "auto",
+    compact: false,
+    inPane: false,
+    eligible: ["c"],
+    suppressed: null,
+    ...overrides,
+  });
 
 test("REPRO: a thread whose subthreads only work opens plainly", () => {
-  const working = set(wide, { p1: { status: "active" }, q2: { activity: { ...IDLE, backgroundAgents: 1 } }, p4: { queuedWork: "waiting" } });
+  const working = set(wide, {
+    p1: { status: "active" },
+    q2: { activity: { ...IDLE, backgroundAgents: 1 } },
+    p4: { queuedWork: "waiting" },
+  });
   expect(open({ eligible: eligibleIds("a", working, NONE) })).toBe(false);
   // One passive descendant among them is enough.
-  expect(open({ eligible: eligibleIds("a", set(working, { p3: { status: "error", updatedAt: 300 } }), NONE) })).toBe(true);
+  expect(
+    open({
+      eligible: eligibleIds("a", set(working, { p3: { status: "error", updatedAt: 300 } }), NONE),
+    }),
+  ).toBe(true);
 });
 
 test("auto-open needs the setting, a wide window, a new pane and an eligible descendant", () => {
@@ -313,7 +466,12 @@ test("after Only this thread, only a descendant it did not see brings the column
 test("the seen mark covers the result and, for a failure, its last update", () => {
   expect(seenMark(thread("c", "a"), record("c", { resultAt: 200 }))).toBe(200);
   expect(seenMark(thread("c", "a", { status: "error", updatedAt: 300 }), undefined)).toBe(300);
-  expect(seenMark(thread("c", "a", { queuedWork: "failed", updatedAt: 150 }), record("c", { resultAt: 200 }))).toBe(200);
+  expect(
+    seenMark(
+      thread("c", "a", { queuedWork: "failed", updatedAt: 150 }),
+      record("c", { resultAt: 200 }),
+    ),
+  ).toBe(200);
   expect(seenMark(thread("c", "a"), undefined)).toBe(0);
 });
 
@@ -342,11 +500,20 @@ test("focus leaving the clicked column marks it seen; focus inside it keeps it",
 });
 
 test("a menu or picker opened from the column keeps the engagement", () => {
-  for (const kind of ["pointer", "focus"] as const) expect(engage("c", undefined, "a", kind)).toEqual({ engaged: "c", leave: null });
+  for (const kind of ["pointer", "focus"] as const)
+    expect(engage("c", undefined, "a", kind)).toEqual({ engaged: "c", leave: null });
 });
 
 const focus = (overrides: Partial<Parameters<typeof isStolenFocus>[0]> = {}) =>
-  isStolenFocus({ engaged: null, target: "d", anchorId: "a", editable: true, afterTab: false, keyColumn: null, ...overrides });
+  isStolenFocus({
+    engaged: null,
+    target: "d",
+    anchorId: "a",
+    editable: true,
+    afterTab: false,
+    keyColumn: null,
+    ...overrides,
+  });
 
 test("REPRO: a mounting column's composer cannot take focus from the anchor or the clicked column", () => {
   // BB's composer focuses itself on mount: in d, while focus is in the anchor or in clicked c.
@@ -386,9 +553,14 @@ test("REPRO: a thread opened into a new split pane counts as opened, though BB a
 test("focusing a pane that was already open is not opening", () => {
   const opened = routeChange(new Set(["A"]), "T", ["A", "T"]);
   expect(routeChange(opened.panes, "A", ["A", "T"]).inPane).toBe(true);
-  expect(routeChange(routeChange(opened.panes, "A", ["A", "T"]).panes, "T", ["A", "T"]).inPane).toBe(true);
+  expect(
+    routeChange(routeChange(opened.panes, "A", ["A", "T"]).panes, "T", ["A", "T"]).inPane,
+  ).toBe(true);
   // A plugin page in a pane has no thread; a plain click replaces the focused pane's thread.
-  expect(routeChange(new Set(["A", "B"]), null, [null, "B"])).toEqual({ inPane: false, panes: new Set(["B"]) });
+  expect(routeChange(new Set(["A", "B"]), null, [null, "B"])).toEqual({
+    inPane: false,
+    panes: new Set(["B"]),
+  });
   expect(routeChange(new Set(["A", "B"]), "C", ["C", "B"]).inPane).toBe(false);
   // Without a split there are no panes to focus.
   expect(routeChange(new Set(), "T", []).inPane).toBe(false);
@@ -396,7 +568,9 @@ test("focusing a pane that was already open is not opening", () => {
 
 test("REPRO: a seen failure stays seen in the row and leaves no column", () => {
   const failed = thread("c", "a", { status: "error", updatedAt: 300 });
-  const seen = records(record("c", { resultAt: 200, seenAt: seenMark(failed, record("c", { resultAt: 200 })) }));
+  const seen = records(
+    record("c", { resultAt: 200, seenAt: seenMark(failed, record("c", { resultAt: 200 })) }),
+  );
   expect(isEligible(failed, seen.get("c"))).toBe(false);
   // The row keeps BB's failure cross; only the dot clears.
   expect(rowAttention(failed, [failed], seen)).toMatchObject({ failed: true, unread: false });
@@ -408,7 +582,16 @@ test("REPRO: without Responsibilities a failed child keeps its column through BB
   const none = withSeen(undefined, {});
   expect(needOf(failed, none.get("c"))).toBe("failed");
   // The mounting composer's focus engages nothing and leaves nothing.
-  expect(isStolenFocus({ engaged: null, target: "c", anchorId: "a", editable: true, afterTab: false, keyColumn: null })).toBe(true);
+  expect(
+    isStolenFocus({
+      engaged: null,
+      target: "c",
+      anchorId: "a",
+      editable: true,
+      afterTab: false,
+      keyColumn: null,
+    }),
+  ).toBe(true);
   expect(engage(null, "c", "a", "focus")).toEqual({ engaged: null, leave: null });
   // A click in, then a click elsewhere: seen in this browser.
   const into = engage(null, "c", "a", "pointer");
@@ -421,12 +604,21 @@ test("REPRO: without Responsibilities a failed child keeps its column through BB
 });
 
 test("REPRO: without Responsibilities only waiting and failed descendants need him; its records later add unread ones as new columns", () => {
-  const threads = [thread("a", null), thread("f", "a", { status: "error", updatedAt: 300 }), thread("r", "a"), thread("w", "a", { hasPendingInteraction: true })];
+  const threads = [
+    thread("a", null),
+    thread("f", "a", { status: "error", updatedAt: 300 }),
+    thread("r", "a"),
+    thread("w", "a", { hasPendingInteraction: true }),
+  ];
   const none = withSeen(undefined, {});
   expect(eligibleIds("a", threads, none)).toEqual(["f", "w"]);
   const page = nextColumns(NO_COLUMNS, "a", threads, none);
   const late = withSeen([record("r", { resultAt: 200 })], {});
-  expect(nextColumns(page, "a", threads, late).columns.map((column) => column.id)).toEqual(["f", "r", "w"]);
+  expect(nextColumns(page, "a", threads, late).columns.map((column) => column.id)).toEqual([
+    "f",
+    "r",
+    "w",
+  ]);
 });
 
 test("a seen mark of this browser counts over Responsibilities' record, and a newer one of theirs over it", () => {

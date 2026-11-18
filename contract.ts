@@ -6,8 +6,19 @@ export const RESPONSIBILITIES = "responsibilities";
 export const contract = {
   list: {
     input: z.object({}),
-    output: z.array(z.object({ threadId: z.string(), resultAt: z.number().nullable(), quietAttentionAt: z.number().nullable(), seenAt: z.number().nullable() })),
+    output: z.array(
+      z.object({
+        threadId: z.string(),
+        resultAt: z.number().nullable(),
+        quietAttentionAt: z.number().nullable(),
+        seenAt: z.number().nullable(),
+      }),
+    ),
     tags: () => ["attention"],
   },
-  seen: { input: z.object({ threadId: z.string(), resultAt: z.number() }), output: z.null(), invalidates: () => ["attention"] },
+  seen: {
+    input: z.object({ threadId: z.string(), resultAt: z.number() }),
+    output: z.null(),
+    invalidates: () => ["attention"],
+  },
 };

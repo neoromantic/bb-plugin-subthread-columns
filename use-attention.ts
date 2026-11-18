@@ -55,14 +55,24 @@ export function useMarkSeen() {
         window.dispatchEvent(new StorageEvent("storage", { key: SEEN }));
       }
       // A plain call, so a missing Responsibilities raises no error toast; its contract invalidates `attention`.
-      sdk.plugins.callRpc({ pluginId: RESPONSIBILITIES, method: "seen", input: { threadId, resultAt }, outputSchema: contract.seen.output }).catch(() => {});
+      sdk.plugins
+        .callRpc({
+          pluginId: RESPONSIBILITIES,
+          method: "seen",
+          input: { threadId, resultAt },
+          outputSchema: contract.seen.output,
+        })
+        .catch(() => {});
     },
     [sdk],
   );
 }
 
 /** Seen: the thread is shown in a visible, focused window when its result arrives or later. */
-export function useSeenWhileShown(threadId: string | null, attention: ReadonlyMap<string, Attention>) {
+export function useSeenWhileShown(
+  threadId: string | null,
+  attention: ReadonlyMap<string, Attention>,
+) {
   const markSeen = useMarkSeen();
   useEffect(() => {
     const record = threadId ? attention.get(threadId) : undefined;
