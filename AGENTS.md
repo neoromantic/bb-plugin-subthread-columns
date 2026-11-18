@@ -59,4 +59,53 @@ Use the project section's native commands for checks, offline tests and builds:
 
 ## Project
 
-Project-specific rules go here, below the devkit block.
+Subthread Columns is a BB plugin: opening a parent thread shows it beside its waiting and failed
+descendants as columns, each with its own chat and composer. Unread-result columns need the
+optional Responsibilities plugin. It ships on npm as `bb-plugin-subthread-columns` with BB
+plugin ID `subthread-columns`.
+
+### Layout
+
+- `package.json` `"bb"` declares the entry files: `server.ts` (`bb.server`, defines the
+  `columns` and `maxColumns` settings) and `app.tsx` (`bb.app`, registers the auto-open app
+  overlay and the `columns` nav panel page). Knip uses the same two files as entries.
+- `columns-view.tsx` is the page and overlay UI, `columns.ts` picks and orders the columns,
+  `attention.ts` decides which threads need you, `use-attention.ts` reads Responsibilities
+  records and keeps seen marks, and `contract.ts` is the Responsibilities RPC contract.
+- Tests sit beside their code as `*.test.ts` and run offline.
+- `bun run build` writes `dist/` (gitignored). The npm package ships the sources, `dist/`, the
+  docs and the screenshot listed in `files`.
+
+### Commands
+
+- `bun install --frozen-lockfile`
+- `bun run check`: `oxfmt --check`, oxlint with the landmines rules, `tsc --noEmit`, Knip.
+- `bun run test`: the offline tests.
+- `bun run build`: `bb plugin build` into `dist/`.
+- `bun run format`: formats the repo in place.
+
+CI runs `check`, `build` and `test` through devkit's `ci-bun`.
+
+### Gotchas
+
+- `bun run build` uses `bb` from the pinned `bb-app` devDependency. It takes `esbuild`,
+  `@tailwindcss/node`, `@tailwindcss/oxide` and `tailwindcss` from `node_modules` only at the
+  exact versions that `bb-app` pins; otherwise it downloads them on the first build. When you
+  bump `bb-app`, bump those four to its pins in the same change. Knip ignores them because
+  nothing imports them.
+- The page relies on experimental BB APIs and internal sidebar markup. Check a BB upgrade
+  against the README's Compatibility section and update that section with any change.
+- Screenshots use synthetic data only; `assets/README.md` records how `assets/columns.png` was
+  captured.
+
+### Release
+
+Owner only, as for 0.1.0:
+
+1. Set `version` in `package.json`, the pinned version in the README's Install section and in
+   `PLUGIN_OVERVIEW.md`, and update `MIGRATION.md` when an upgrade needs steps.
+2. On `main`, run `bun run check`, `bun run test` and `bun run build`, then pack the npm
+   tarball with `bun pm pack`; it ships the prebuilt `dist/`.
+3. Tag `vX.Y.Z` and publish the GitHub release "Subthread Columns X.Y.Z" with the npm tarball,
+   a source archive (`bb-plugin-subthread-columns-X.Y.Z-source.tar.gz`) and `SHA256SUMS`.
+4. Publish the same tarball to npm.
