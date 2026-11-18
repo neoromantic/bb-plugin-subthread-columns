@@ -1,6 +1,5 @@
 import { expect, mock, test } from "bun:test";
 
-// The host supplies React; registration itself renders nothing.
 mock.module("react", () => ({
   memo: (component: unknown) => component,
   useCallback() {},

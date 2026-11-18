@@ -37,7 +37,6 @@ export const DEFAULT_LIMIT = 8;
 export const columnLimit = (value: unknown) =>
   typeof value === "number" && Number.isInteger(value) && value >= 1 ? value : DEFAULT_LIMIT;
 
-// Unknown statuses count as idle, as the SDK asks.
 const BUSY = new Set<string>(["starting", "active", "pending", "stopping"]);
 const NOT_READY = new Set<string>(["provisioning", "waiting-for-host"]);
 
@@ -132,7 +131,6 @@ export function nextColumns(
   for (const { thread } of candidates) {
     if (show.size + gone.length < limit) show.add(thread.id);
     else {
-      // Only a newcomer takes a done column's place; one already waiting keeps waiting.
       const oldest = waited.has(thread.id) ? undefined : replaceable.shift();
       if (oldest) {
         show.delete(oldest.thread.id);

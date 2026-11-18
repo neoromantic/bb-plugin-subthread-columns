@@ -39,11 +39,9 @@ import {
 import { useAttention, useMarkSeen, useSeenWhileShown } from "./use-attention";
 
 export const COLUMNS_PATH = "columns";
-/** BB's own compact breakpoint (`useIsCompactViewport`). */
 const COMPACT = "(max-width: 767px)";
 const SUPPRESS = "subthread-columns/only-this-thread:";
 const ROW = "[data-sidebar-rename-row]";
-/** Layers a column opens outside itself: its menus, pickers and dialogs. */
 const FLOATING =
   '[data-radix-popper-content-wrapper], [role="dialog"], [role="menu"], [role="listbox"], [role="tooltip"]';
 
@@ -81,7 +79,6 @@ export const COLUMNS_CSS = `
 }
 `;
 
-// The anchors of the columns pages on screen, newest last; its sidebar row looks current.
 const anchors: string[] = [];
 const anchorListeners = new Set<() => void>();
 const columnsAnchor = () => anchors.at(-1) ?? null;
@@ -100,13 +97,11 @@ function showAnchor(id: string) {
   };
 }
 
-/** The column holding `node`, among the page's columns in `root`. */
 function columnOf(root: HTMLElement | null, node: EventTarget | null) {
   const column = node instanceof Element ? node.closest<HTMLElement>("[data-mea-column]") : null;
   return column && root?.contains(column) ? (column.dataset.meaColumn ?? null) : null;
 }
 
-/** A thread "Open" asked for; the next navigation to it shows it plainly. */
 let plainOpen: string | null = null;
 
 function readSuppressed(threadId: string): string[] | null {
@@ -135,13 +130,11 @@ export function SubthreadColumnsAutoOpen() {
   const pending = useRef<{ id: string; inPane: boolean } | null>(null);
   const current = useSyncExternalStore(subscribeColumnsAnchor, columnsAnchor);
 
-  // The anchor of the columns page on screen looks like BB's own current row, also after the sidebar re-renders it.
   useEffect(() => {
     if (!current) return;
     let frame = 0;
     const sync = () => {
       frame = 0;
-      // From the link up: a section's sticky group carries the row attribute too.
       for (const link of document.querySelectorAll<HTMLElement>("a[data-sidebar-thread-id]")) {
         const row = link.closest<HTMLElement>(ROW);
         if (
@@ -216,7 +209,6 @@ export function SubthreadColumnsPage({ subPath }: PluginNavPanelProps) {
   const { attention, loaded } = useAttention();
   const anchor = threads.find((thread) => thread.id === anchorId && !thread.isHidden) ?? null;
   const shownId = anchor?.id ?? null;
-  // BB has no open thread on a plugin page, so the page applies the open-thread rule to its anchor.
   useSeenWhileShown(shownId, attention);
   useEffect(() => (shownId ? showAnchor(shownId) : undefined), [shownId]);
   if (!anchor)
@@ -248,7 +240,6 @@ function Columns(props: {
   const [{ columns, more }, setLayout] = useState<Layout>(() =>
     nextColumns(NO_COLUMNS, anchor.id, threads, attention, { limit }),
   );
-  // Columns from the first snapshot are not news; later ones get a short highlight.
   const initial = useRef(new Set(columns.map((column) => column.id)));
   if (!props.loaded) for (const column of columns) initial.current.add(column.id);
   const engagedRef = useRef<string | null>(null);
@@ -260,10 +251,8 @@ function Columns(props: {
   const view = useRef<{ id: string; x: number } | null>(null);
 
   useEffect(() => {
-    // The columns he is in: clicked, or holding focus after Tab.
     const held = [engagedRef.current, columnOf(scroller.current, document.activeElement)];
     setLayout((prev) => {
-      // Until the plugin's records arrive, failures and results are not known yet.
       const shown = props.loaded
         ? prev
         : { columns: prev.columns.filter((column) => held.includes(column.id)), more: [] };
@@ -271,7 +260,6 @@ function Columns(props: {
     });
   }, [anchor.id, threads, attention, engaged, limit, props.loaded]);
 
-  // ThreadChat mounts once its column comes within about one column of the viewport, and stays.
   useLayoutEffect(() => {
     const io = new IntersectionObserver(
       (entries) => {
@@ -287,7 +275,6 @@ function Columns(props: {
     return () => io.disconnect();
   }, []);
 
-  // The leftmost visible column keeps its screen position when columns come or go before it.
   const remember = () => {
     const root = scroller.current;
     const first =
@@ -317,7 +304,6 @@ function Columns(props: {
     remember();
   }, [columns]);
 
-  // Seen: he clicked into a descendant's column and then clicked or focused anything else, or left the page.
   useEffect(() => {
     const root = scroller.current;
     const markSeen = (id: string) => {
@@ -335,7 +321,6 @@ function Columns(props: {
     const onEvent = (event: Event) => {
       if (!root || !(event.target instanceof Element)) return;
       const column = event.target.closest<HTMLElement>("[data-mea-column]");
-      // The scroller's own scrollbar and layers opened from a column leave nothing.
       const target =
         column && root.contains(column)
           ? (column.dataset.meaColumn ?? null)
@@ -358,7 +343,6 @@ function Columns(props: {
         const back = event.relatedTarget;
         if (back instanceof HTMLElement && back.isConnected) back.focus({ preventScroll: true });
         else if (event.target instanceof HTMLElement) event.target.blur();
-        // It also scrolled itself into view, before its scroll event could update the remembered view.
         restore();
         return;
       }
@@ -428,25 +412,19 @@ function Columns(props: {
   );
 }
 
-/** Kept apart so a change in its header or the sidebar never re-renders a chat. */
 const Chat = memo(function Chat({ threadId }: { threadId: string }) {
-  // Compact keeps the composer and follows the newest message.
   return <ThreadChat threadId={threadId} variant="compact" layout="contained" />;
 });
 
-/** Props are plain values or stable objects, so a column re-renders only when its own state changes. */
 const ColumnView = memo(function ColumnView(props: {
   id: string;
-  /** Absent once the thread is gone. */
   indicator?: PluginSidebarThread["indicator"];
   rowStatus?: PluginComposerThreadRowStatus | null;
-  /** Null for the anchor. */
   column: Column | null;
   mounted: boolean;
   engaged: boolean;
   fresh: boolean;
   observer: IntersectionObserver | null;
-  /** The anchor's: eligible descendants without a column. */
   more?: Layout["more"];
   onlyThisThread?: () => void;
 }) {
@@ -476,7 +454,6 @@ const ColumnView = memo(function ColumnView(props: {
       data-fresh={props.fresh ? "" : undefined}
     >
       <header>
-        {/* The anchor's empty path line keeps every header the same height. */}
         <p title={column?.path.join(" › ")}>{column && `${column.path.join(" › ")} ›`}</p>
         <div>
           {indicator && (

@@ -81,7 +81,6 @@ export type RowAttention = {
   quiet: boolean;
 };
 
-/** Glyphs BB's collapsed parent takes over from its hidden descendants. */
 const COLLAPSED_ACTIVITY = new Set([
   "waiting-for-input",
   "working-draft",
