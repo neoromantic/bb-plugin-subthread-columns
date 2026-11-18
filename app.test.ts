@@ -1,16 +1,5 @@
-import { expect, mock, test } from "bun:test";
+import { expect, test } from "bun:test";
 
-mock.module("react", () => ({
-  memo: (component: unknown) => component,
-  useCallback() {},
-  useEffect() {},
-  useLayoutEffect() {},
-  useMemo() {},
-  useRef() {},
-  useState() {},
-  useSyncExternalStore() {},
-}));
-mock.module("react/jsx-runtime", () => ({ jsx() {}, jsxs() {}, Fragment: "Fragment" }));
 const { default: app } = (await import("./app")) as { default: { setup(builder: unknown): void } };
 
 test("the columns page and its auto-open overlay register", () => {
